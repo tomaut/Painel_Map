@@ -11,8 +11,8 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.app{display:gri
 .brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.brandmark{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--green),#0b8fcb);display:grid;place-items:center;font-weight:900;color:#03110d}
 .brand h1{font-size:16px;margin:0}.brand small{color:var(--muted)}.nav button{width:100%;border:1px solid transparent;background:transparent;color:#a9bac5;text-align:left;padding:12px 13px;border-radius:11px;margin:3px 0}
 .nav button:hover,.nav button.active{background:#11222d;border-color:#1d3948;color:#fff}.nav button span{display:inline-block;width:26px}.sidebar-foot{position:absolute;bottom:18px;left:16px;right:16px;color:#617682;font-size:11px;line-height:1.5}
-main{min-width:0}.topbar{height:72px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;backdrop-filter:blur(16px);position:sticky;top:0;z-index:20;background:rgba(7,16,24,.8)}
-.title{font-size:18px;font-weight:750}.subtitle{font-size:12px;color:var(--muted);margin-top:3px}.top-actions{display:flex;gap:8px;align-items:center}
+main{min-width:0}.topbar{min-height:72px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px 24px;backdrop-filter:blur(16px);position:sticky;top:0;z-index:20;background:rgba(7,16,24,.8)}
+.title{font-size:18px;font-weight:750}.subtitle{font-size:12px;color:var(--muted);margin-top:3px}.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .btn{border:1px solid #294150;background:#101e29;color:#dce8ee;padding:9px 12px;border-radius:10px}.btn:hover{border-color:#3c6070;background:#142734}.btn.primary{background:linear-gradient(135deg,#18bd7b,#1598b8);border:none;color:#03110d;font-weight:800}
 .content{padding:22px;max-width:1700px;margin:auto}.grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(340px,.75fr);gap:18px}
 .card{background:linear-gradient(180deg,rgba(16,30,42,.96),rgba(10,20,29,.96));border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
@@ -36,7 +36,7 @@ main{min-width:0}.topbar{height:72px;border-bottom:1px solid var(--line);display
 .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.meta div{padding:10px;border:1px solid #213640;border-radius:9px;background:#08131b}.meta small{display:block;color:#718894;font-size:9px;text-transform:uppercase}.meta b{font-size:12px}
 .toast{position:fixed;right:20px;bottom:20px;z-index:200;background:#0f2720;border:1px solid #277452;color:#b9f5dc;padding:12px 14px;border-radius:10px;box-shadow:var(--shadow);display:none}
 @media(max-width:1100px){.app{grid-template-columns:1fr}.sidebar{height:auto;position:relative;border-right:0;border-bottom:1px solid var(--line)}.sidebar-foot{display:none}.nav{display:flex;overflow:auto}.nav button{min-width:max-content}.grid{grid-template-columns:1fr}}
-@media(max-width:650px){.content{padding:12px}.topbar{padding:0 12px}.stats{grid-template-columns:1fr 1fr}.two,.diag-grid,.meta{grid-template-columns:1fr}}
+@media(max-width:650px){.content{padding:12px}.topbar{padding:12px;flex-direction:column;align-items:flex-start}.top-actions{width:100%}.stats{grid-template-columns:1fr 1fr}.two,.diag-grid,.meta{grid-template-columns:1fr}}
 
 .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.edit-grid .full{grid-column:1/-1}.edit-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}.edit-actions .danger{border-color:#69333a;color:#ffb4bd;background:#251217}.switchline{display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid #213640;border-radius:9px;background:#08131b}.switch{width:42px;height:23px;border-radius:20px;background:#23343d;position:relative;cursor:pointer}.switch input{display:none}.switch i{position:absolute;width:17px;height:17px;left:3px;top:3px;border-radius:50%;background:#8da1af;transition:.2s}.switch input:checked+i{left:22px;background:var(--green)}
 @media(max-width:650px){.edit-grid{grid-template-columns:1fr}.edit-grid .full{grid-column:auto}}
@@ -216,7 +216,45 @@ function restoreDefaults(){
 }
 
 function switchView(view){currentView=view;document.getElementById('tabInterior').classList.toggle('active',view==='interior');document.getElementById('tabDoor').classList.toggle('active',view==='door');const img=document.getElementById('panelImg'),doorImg=document.getElementById('panelImgDoor');if(view==='door'){img.style.display='none';doorImg.style.display='block'}else{img.style.display='block';doorImg.style.display='none'}renderMarkers()}
-function renderMarkers(){const box=document.getElementById('markers');box.innerHTML='';components.filter(c=>c.view===currentView).forEach(c=>{const m=document.createElement('button');m.className='marker '+(c.critical?'critical':'');m.textContent=c.id.replace(/[^0-9]/g,'')||'•';m.style.left=c.x+'%';m.style.top=c.y+'%';m.title=c.id+' — '+c.name;m.onclick=()=>openModal(c.id);box.appendChild(m)})}
+function getRenderedImageRect(){
+  const wrap=document.querySelector('.image-wrap');
+  const img=currentView==='door'?document.getElementById('panelImgDoor'):document.getElementById('panelImg');
+  if(!wrap||!img||!img.naturalWidth)return null;
+  const wrapRect=wrap.getBoundingClientRect();
+  const cw=wrap.clientWidth,ch=wrap.clientHeight;
+  const iw=img.naturalWidth,ih=img.naturalHeight;
+  const scale=Math.min(cw/iw,ch/ih);
+  const renderW=iw*scale,renderH=ih*scale;
+  const offsetX=(cw-renderW)/2,offsetY=(ch-renderH)/2;
+  return {left:offsetX,top:offsetY,width:renderW,height:renderH};
+}
+function placeMarkers(){
+  const box=document.getElementById('markers');
+  const rect=getRenderedImageRect();
+  if(!box||!rect)return;
+  Array.from(box.children).forEach(m=>{
+    const x=parseFloat(m.dataset.x),y=parseFloat(m.dataset.y);
+    m.style.left=(rect.left+(x/100)*rect.width)+'px';
+    m.style.top=(rect.top+(y/100)*rect.height)+'px';
+  });
+}
+function renderMarkers(){
+  const box=document.getElementById('markers');box.innerHTML='';
+  const img=currentView==='door'?document.getElementById('panelImgDoor'):document.getElementById('panelImg');
+  components.filter(c=>c.view===currentView).forEach(c=>{
+    const m=document.createElement('button');
+    m.className='marker '+(c.critical?'critical':'');
+    m.dataset.x=c.x;m.dataset.y=c.y;
+    m.textContent=c.id.replace(/[^0-9]/g,'')||'•';
+    m.title=c.id+' — '+c.name;
+    m.onclick=()=>openModal(c.id);
+    box.appendChild(m);
+  });
+  if(img&&img.complete&&img.naturalWidth){placeMarkers()}
+  else if(img){img.addEventListener('load',placeMarkers,{once:true})}
+}
+window.addEventListener('resize',()=>{placeMarkers()});
+window.addEventListener('orientationchange',()=>{setTimeout(placeMarkers,150)});
 function renderList(){const q=document.getElementById('componentSearch').value.toLowerCase().trim();const list=document.getElementById('componentList');const arr=components.filter(c=>[c.id,c.name,c.type,c.status,...c.tags].join(' ').toLowerCase().includes(q));list.innerHTML=arr.map(c=>`<div class="item" onclick="openModal('${c.id}')"><div class="item-left"><div class="item-id">${c.id}</div><div class="item-name">${escapeHtml(c.name)}</div></div><span class="badge ${c.critical?'yellow':''}">${escapeHtml(c.status)}</span></div>`).join('')||'<div class="item"><span class="muted">Nenhum componente encontrado.</span></div>'}
 function fillSelect(){document.getElementById('componentSelect').innerHTML='<option value="">Selecione...</option>'+components.map(c=>`<option value="${c.id}">${c.id} — ${escapeHtml(c.name)}</option>`).join('')}
 function openModal(id){const c=components.find(x=>x.id===id);if(!c)return;selected=c;document.getElementById('modalType').textContent=c.type.toUpperCase();document.getElementById('modalName').textContent=c.name;document.getElementById('modalId').textContent=c.id;document.getElementById('modalStatus').textContent=c.status;document.getElementById('modalCritical').textContent=c.critical?'ALTA':'NORMAL';document.getElementById('modalDesc').textContent=c.desc;document.getElementById('modalDocs').textContent=c.docs;document.getElementById('modal').classList.add('show')}
